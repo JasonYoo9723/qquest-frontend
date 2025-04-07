@@ -6,7 +6,7 @@
       <div class="flex items-center gap-2">
         <!-- 로고 -->
         <RouterLink to="/" class="text-2xl font-bold flex items-center whitespace-nowrap">
-          <span class="text-red-600">Q</span><span class="text-black">uiz</span>
+          <span class="text-red-600">Q</span>
           <span class="text-red-600">Q</span><span class="text-black">uest</span>
         </RouterLink>
 
@@ -51,7 +51,7 @@
 
       <!-- 데스크탑 네비게이션 -->
       <nav class="hidden md:flex gap-6 text-sm text-gray-700">
-        <RouterLink to="/learn" class="hover:underline">학습 도구</RouterLink>
+        <RouterLink to="/learn" class="hover:underline">학습하기</RouterLink>
         <RouterLink to="/solve" class="hover:underline">문제풀이</RouterLink>
         <RouterLink to="/note" class="hover:underline">오답노트</RouterLink>
         <RouterLink to="/dashboard" class="hover:underline">대시보드</RouterLink>
@@ -82,10 +82,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useCertificationStore } from '@/stores/certification'
-
+import BaseModal from '@/components/BaseModal.vue'
+const showCertWarning = ref(false)
 const menuOpen = ref(false)
 const mobileDropdown = ref(false)
 const showDropdown = ref(false)
@@ -121,9 +122,25 @@ function handleClickOutside(event) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('show-cert-warning', () => {
+    showCertWarning.value = true
+  })
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
+
+watch(
+  () => certStore.selectedCert,
+  (val) => {
+    if (!val || !val.id) {
+      const currentPath = router.currentRoute.value.path
+      if (['/learn', '/solve'].includes(currentPath)) {
+        window.dispatchEvent(new CustomEvent('show-cert-warning'))
+        router.replace('/dashboard')
+      }
+    }
+  }
+)
 </script>

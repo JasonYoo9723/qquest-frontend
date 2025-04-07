@@ -19,5 +19,7 @@ export const useCertificationStore = defineStore('certification', {
     setCertification(cert) {
       this.selectedCert = cert
     }
-  }
+  },
+
+  persist: true
 })
