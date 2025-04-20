@@ -17,7 +17,13 @@ export default defineConfig(({ mode }) => ({
   },
   base: mode === 'production' ? '/QQuest/' : '/',
   server: {
-    port: 3000,
-    open: true
-  }
+    port: 5173,
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8099',
+        changeOrigin: true
+      }
+    }
+  },
 }))

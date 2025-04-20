@@ -1,0 +1,19 @@
+{
+  "exam_name": "공인중개사 1차",
+  "year": 2024,
+  "round": 35,
+  "questions": [
+    {
+      "question_no": 1,
+      "question_text": "질문 텍스트",
+      "subject_name": "부동산학개론",
+      "choices": [
+        { "choice_content": "보기1" },
+        { "choice_content": "보기2" },
+        { "choice_content": "보기3" },
+        { "choice_content": "보기4" },
+        { "choice_content": "보기5" }
+      ]
+    }
+  ]
+}

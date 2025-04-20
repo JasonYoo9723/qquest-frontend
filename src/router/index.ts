@@ -4,6 +4,7 @@ import LearnPage from '@/views/LearnPage.vue'
 import SolvePage from '@/views/SolvePage.vue'
 import NotePage from '@/views/NotePage.vue'
 import DashboardPage from '@/views/DashboardPage.vue'
+import UploadPage from '@/views/UploadPage.vue'
 import { useCertificationStore } from '@/stores/certification'
 
 const routes: RouteRecordRaw[] = [
@@ -11,6 +12,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/learn', component: LearnPage },
   { path: '/solve', component: SolvePage },
   { path: '/note', component: NotePage },
+  { path: '/upload', component: UploadPage },
   { path: '/', redirect: '/dashboard' }
 ]
 
