@@ -25,16 +25,17 @@
 import HeaderPage from '@/components/HeaderPage.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import LoadingBar from '@/components/LoadingBar.vue'
-
+import { useCertificationStore } from '@/stores/certification' 
 import { onMounted } from 'vue'
 import { useModalStore } from '@/stores/modal'
 import { storeToRefs } from 'pinia'
 
 const modal = useModalStore()
 const { isOpen, title, message } = storeToRefs(modal) // ✅ 여기 중요!
+const certStore = useCertificationStore()
 
-// 예: 이전 방식처럼 이벤트도 병행할 수 있음
-onMounted(() => {
+onMounted(async () => {
+  await certStore.fetchCertifications()  // ✅ 강제 호출
   window.addEventListener('show-cert-warning', () => {
     modal.show('카테고리', '카테고리를 먼저 선택해주세요.')
   })

@@ -1,7 +1,7 @@
+<!-- qquest-frontend\src\components\HeaderPage.vue -->
 <template>
   <header class="bg-white shadow-sm px-4 py-2 sticky top-0 z-50">
     <div class="container mx-auto max-w-7xl flex items-center justify-between">
-
       <!-- 왼쪽: 로고 + 자격증 선택 -->
       <div class="flex items-center gap-2">
         <!-- 로고 -->
@@ -19,7 +19,7 @@
             @click="toggleDropdown"
             class="cursor-pointer text-xs border px-2 py-1 rounded hover:bg-gray-100 text-gray-800 w-40 inline-flex justify-between items-center"
           >
-            {{ certStore.selectedCert.name }}
+            {{ certStore.selectedCert?.exam_name || '카테고리 선택' }}
             <svg class="w-4 h-4 ml-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
               viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -37,7 +37,7 @@
                 @click.prevent="selectCert(cert)"
                 class="block px-4 py-2 hover:bg-gray-100 text-gray-800 text-sm"
               >
-                {{ cert.name }}
+                {{ cert.exam_name }}
               </a>
             </li>
           </ul>
@@ -52,7 +52,7 @@
       <!-- 데스크탑 네비게이션 -->
       <nav class="hidden md:flex gap-6 text-sm text-gray-700">
         <RouterLink to="/learn" class="hover:underline">학습하기</RouterLink>
-        <RouterLink to="/solve" class="hover:underline">문제풀이</RouterLink>
+        <RouterLink to="/solve" class="hover:underline">문제풀기</RouterLink>
         <RouterLink to="/note" class="hover:underline">오답노트</RouterLink>
         <RouterLink to="/dashboard" class="hover:underline">대시보드</RouterLink>
       </nav>
@@ -67,8 +67,8 @@
     <!-- 모바일 메뉴 -->
     <div v-if="menuOpen" class="md:hidden bg-white text-black px-4 pt-4 pb-2">
       <nav class="flex flex-col gap-3 text-sm">
-        <RouterLink to="/learn" @click="closeMenu" class="hover:underline">학습 도구</RouterLink>
-        <RouterLink to="/solve" @click="closeMenu" class="hover:underline">문제풀이</RouterLink>
+        <RouterLink to="/learn" @click="closeMenu" class="hover:underline">학습하기</RouterLink>
+        <RouterLink to="/solve" @click="closeMenu" class="hover:underline">문제풀기</RouterLink>
         <RouterLink to="/note" @click="closeMenu" class="hover:underline">오답노트</RouterLink>
         <RouterLink to="/dashboard" @click="closeMenu" class="hover:underline">대시보드</RouterLink>
 
@@ -83,15 +83,21 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useCertificationStore } from '@/stores/certification'
-import BaseModal from '@/components/BaseModal.vue'
-const showCertWarning = ref(false)
-const menuOpen = ref(false)
-const mobileDropdown = ref(false)
-const showDropdown = ref(false)
+import { useExamMetaStore } from '@/stores/examMeta'
 
+const examMetaStore = useExamMetaStore()
 const certStore = useCertificationStore()
+const router = useRouter()
+const route = useRoute()
+
+const showDropdown = ref(false)
+const menuOpen = ref(false)
+
+function toggleDropdown() {
+  showDropdown.value = !showDropdown.value
+}
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -99,16 +105,11 @@ function toggleMenu() {
 
 function closeMenu() {
   menuOpen.value = false
-  mobileDropdown.value = false
-}
-
-function toggleDropdown() {
-  showDropdown.value = !showDropdown.value
+  showDropdown.value = false
 }
 
 function selectCert(cert) {
   certStore.setCertification(cert)
-  showDropdown.value = false
   closeMenu()
 }
 
@@ -120,27 +121,32 @@ function handleClickOutside(event) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await certStore.fetchCertifications()
   document.addEventListener('click', handleClickOutside)
-  window.addEventListener('show-cert-warning', () => {
-    showCertWarning.value = true
-  })
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 
 watch(
   () => certStore.selectedCert,
-  (val) => {
-    if (!val || !val.id) {
-      const currentPath = router.currentRoute.value.path
-      if (['/learn', '/solve'].includes(currentPath)) {
-        window.dispatchEvent(new CustomEvent('show-cert-warning'))
-        router.replace('/dashboard')
-      }
+  async (val) => {
+    const currentPath = route.path
+
+    if ((!val || !val.exam_code) && ['/learn', '/solve'].includes(currentPath)) {
+      window.dispatchEvent(new CustomEvent('show-cert-warning'))
+      router.replace('/dashboard')
+      return
     }
-  }
+
+    if (val?.exam_code) {
+      const metadata = await examMetaStore.fetchMetadata(val.exam_code)
+      console.log("metadata:::"+metadata)
+      certStore.setExamMeta(metadata)
+    }
+  },
+  { immediate: true }
 )
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

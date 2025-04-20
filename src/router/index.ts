@@ -9,8 +9,8 @@ import { useCertificationStore } from '@/stores/certification'
 
 const routes: RouteRecordRaw[] = [
   { path: '/dashboard', component: DashboardPage },
-  { path: '/learn', component: LearnPage },
-  { path: '/solve', component: SolvePage },
+  { path: '/learn', component: LearnPage, meta: { requiresCert: true } },
+  { path: '/solve', component: SolvePage, meta: { requiresCert: true } },
   { path: '/note', component: NotePage },
   { path: '/upload', component: UploadPage },
   { path: '/', redirect: '/dashboard' }
@@ -24,17 +24,16 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const certStore = useCertificationStore()
 
-  const certId = certStore.selectedCert?.id
-  const isInvalid = !certId || certId === ''
+  // 인증이 필요한 라우트인지 확인
+  const needsCert = to.meta.requiresCert === true
+  const selectedCert = certStore.selectedCert
 
-  const requiresCert = ['/learn', '/solve']
-
-  if (requiresCert.includes(to.path) && isInvalid) {
+  if (needsCert && (!selectedCert || !selectedCert.exam_code)) {
     window.dispatchEvent(new CustomEvent('show-cert-warning'))
-    next('/dashboard') // 또는 next(false)
-  } else {
-    next()
+    return next('/dashboard')
   }
+
+  next()
 })
 
 export default router

@@ -1,10 +1,12 @@
+
+<!-- qquest-frontend/src/views/UploadPage.vue -->
 <template>
   <div class="p-6 space-y-6">
     <h1 class="text-2xl font-bold">기출문제 업로드</h1>
 
     <!-- 시험 정보 입력 -->
     <div class="grid grid-cols-2 gap-4">
-      <input v-model="form.exam_name" placeholder="시험유형 (예: 공인중개사 1차)" class="border p-2 rounded text-black" />
+      <input v-model="form.exam_code" placeholder="시험코드 (예: realtor_1)" class="border p-2 rounded text-black" />
       <input v-model="form.year" type="number" placeholder="년도" class="border p-2 rounded text-black" />
       <input v-model="form.round" type="number" placeholder="회차" class="border p-2 rounded text-black" />
     </div>
@@ -53,12 +55,11 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-import api from '@/lib/api'
-await api.get('/learn/random-question')
+import axios from 'axios'
 import { useLoadingStore } from '@/stores/loading'
 
 const form = ref({
-  exam_name: '',
+  exam_code: '',
   year: null,
   round: null,
 })
@@ -151,13 +152,15 @@ const submit = async () => {
   }
 
   const payload = {
-    ...form.value,
+    exam_code: form.value.exam_code,
+    year: form.value.year,
+    round: form.value.round,
     questions: questions.value.map(q => ({
-    question_no: q.question_no,
-    question_text: q.question_text,
-    subject_name: q.subject_name,
-    choices: q.choices.map(c => ({ choice_content: c }))
-  }))
+      question_no: q.question_no,
+      question_text: q.question_text,
+      subject_name: q.subject_name.trim(),
+      choices: q.choices.map(c => ({ choice_content: c }))
+    }))
   }
 
   console.log('📦 전송 데이터:', JSON.stringify(payload, null, 2))
@@ -165,22 +168,13 @@ const submit = async () => {
   const store = useLoadingStore()
   store.start()
   try {
-    await api.post(
-      "http://localhost:8099/api/admin/save-questions",
-      JSON.stringify(payload), // 수동 직렬화
-      {
-        headers: {
-          "Content-Type": "application/json"
-        },
-        maxBodyLength: Infinity
-      }
-    )
+    await axios.post("http://localhost:8099/api/admin/save-questions", payload)
     alert('저장 완료!')
   } catch (err) {
     console.error('❌ 저장 실패:', err)
     alert('저장 중 오류가 발생했습니다. 콘솔을 확인해 주세요.')
   } finally {
-    store.stop();
+    store.stop()
   }
 }
 </script>
