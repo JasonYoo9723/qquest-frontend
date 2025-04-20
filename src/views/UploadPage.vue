@@ -53,7 +53,8 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-import axios from 'axios'
+import api from '@/lib/api'
+await api.get('/learn/random-question')
 import { useLoadingStore } from '@/stores/loading'
 
 const form = ref({
@@ -164,7 +165,7 @@ const submit = async () => {
   const store = useLoadingStore()
   store.start()
   try {
-    await axios.post(
+    await api.post(
       "http://localhost:8099/api/admin/save-questions",
       JSON.stringify(payload), // 수동 직렬화
       {

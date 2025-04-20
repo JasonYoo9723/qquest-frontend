@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  base: mode === 'production' ? '/QQuest/' : '/',
+  base: mode === 'production' ? '/qquest-frontend/' : '/',
   server: {
     port: 5173,
     open: true,
