@@ -36,7 +36,7 @@ export const useUserStore = defineStore('user', {
 
       this.token = token
       try {
-        const res = await fetch('/api/users/me', {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

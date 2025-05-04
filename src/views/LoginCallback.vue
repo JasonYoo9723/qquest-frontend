@@ -1,4 +1,5 @@
-<template>
+<!-- src\views\LoginCallback.vue -->
+  <template>
     <div>로그인 처리 중...</div>
   </template>
   
@@ -7,7 +8,8 @@
   import axios from 'axios'
   import { useUserStore } from '@/stores/user'
   import { useRouter } from 'vue-router'
-  
+  import api from '@/lib/api'
+
   const userStore = useUserStore()
   const router = useRouter()
   
@@ -20,7 +22,7 @@
     }
   
     try {
-      const res = await axios.get('/api/users/me', {
+      const res = await api.get('/users/me', {
         headers: {
           Authorization: `Bearer ${userStore.token}`
         }
