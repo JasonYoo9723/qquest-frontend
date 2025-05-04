@@ -1,8 +1,8 @@
-<!-- qquest-frontend\src\components\HeaderPage.vue -->
+<!-- src\components\HeaderPage.vue -->
 <template>
   <header class="bg-white shadow-sm px-4 py-2 sticky top-0 z-50">
     <div class="container mx-auto max-w-7xl flex items-center justify-between">
-      <!-- 왼쪽 로고 및 자격증 선택 -->
+      <!-- 로고 및 자격증 선택 -->
       <div class="flex items-center gap-2">
         <RouterLink to="/" class="text-2xl font-bold flex items-center whitespace-nowrap">
           <span class="text-red-600">Q</span><span class="text-red-600">Q</span><span class="text-black">uest</span>
@@ -43,12 +43,16 @@
         <RouterLink to="/learn" class="hover:underline">학습하기</RouterLink>
         <RouterLink to="/solve" class="hover:underline">문제풀기</RouterLink>
         <RouterLink to="/note" class="hover:underline">오답노트</RouterLink>
-        <RouterLink to="/dashboard" class="hover:underline">대시보드</RouterLink>
+        <RouterLink v-if="user?.is_admin" to="/dashboard" class="hover:underline">대시보드</RouterLink>
+        <RouterLink v-if="user?.is_admin" to="/upload" class="hover:underline">문제등록</RouterLink>
+        <RouterLink v-if="user?.is_admin" to="/modify" class="hover:underline">문제수정</RouterLink>
       </nav>
 
-      <div class="hidden md:flex gap-3 text-sm">
-        <button @click="handleLoginClick" class="text-gray-600 hover:text-black">+ 만들기</button>
-        <button @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
+      <!-- 로그인 상태 -->
+      <div class="hidden md:flex gap-3 text-sm items-center">
+        <span v-if="user" class="text-xs text-gray-600">{{ user.name }} 님</span>
+        <button v-if="user" @click="handleLogout" class="bg-gray-300 text-gray-800 px-4 py-1 rounded-full hover:bg-gray-400">로그아웃</button>
+        <button v-else @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
       </div>
     </div>
 
@@ -60,11 +64,21 @@
         <RouterLink to="/note" @click="closeMenu" class="hover:underline">오답노트</RouterLink>
         <RouterLink to="/dashboard" @click="closeMenu" class="hover:underline">대시보드</RouterLink>
 
-        <div class="flex gap-3 mt-2">
-          <button @click="handleLoginClick" class="text-gray-600 hover:text-black">+ 만들기</button>
-          <button @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
+        <div class="flex gap-3 mt-2 items-center">
+          <span v-if="user" class="text-xs text-gray-600">{{ user.name }} 님</span>
+          <button v-if="user" @click="handleLogout" class="bg-gray-300 text-gray-800 px-4 py-1 rounded-full hover:bg-gray-400">로그아웃</button>
+          <button v-else @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
         </div>
       </nav>
+    </div>
+
+    <!-- 데스크탑 Google 로그인 모달 -->
+    <div v-if="showLoginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div ref="modalRef" class="bg-white rounded-xl p-6 shadow-lg w-[300px] text-center">
+        <h3 class="text-lg font-semibold mb-4">Google 로그인</h3>
+        <div id="google-btn-area" class="flex justify-center mb-4"></div>
+        <button @click="showLoginModal = false" class="text-sm text-gray-500 hover:underline">닫기</button>
+      </div>
     </div>
   </header>
 </template>
@@ -75,15 +89,19 @@ import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useCertificationStore } from '@/stores/certification'
 import { useExamMetaStore } from '@/stores/examMeta'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 
 const certStore = useCertificationStore()
 const examMetaStore = useExamMetaStore()
 const userStore = useUserStore()
+const { user } = storeToRefs(userStore)
 const router = useRouter()
 const route = useRoute()
 
 const showDropdown = ref(false)
 const menuOpen = ref(false)
+const showLoginModal = ref(false)
+const modalRef = ref(null)
 
 function toggleDropdown() {
   showDropdown.value = !showDropdown.value
@@ -110,50 +128,55 @@ function handleClickOutside(event) {
   }
 }
 
+function handleClickOutsideModal(event) {
+  if (modalRef.value && !modalRef.value.contains(event.target)) {
+    showLoginModal.value = false
+  }
+}
+
 async function handleLoginClick() {
-  if (userStore.user) {
+  if (user.value) {
     router.push('/dashboard')
     return
   }
 
-  const client = window.google?.accounts?.id
-  if (!client) {
+  const gsi = window.google?.accounts?.id
+  if (!gsi) {
     alert("Google 로그인 초기화가 필요합니다.")
     return
   }
 
-  client.prompt((notification) => {
-    console.log("notification",notification)
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      alert("Google 로그인 창이 표시되지 않았습니다.")
-    }
-  })
+  showLoginModal.value = true
+  setTimeout(() => {
+    gsi.renderButton(document.getElementById("google-btn-area"), {
+      theme: "outline",
+      size: "large",
+      width: 250,
+      type: "standard",
+      text: "signin_with",
+    })
+  }, 100)
+}
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/')
 }
 
 onMounted(async () => {
   await certStore.fetchCertifications()
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('mousedown', handleClickOutsideModal)
 })
-
-watch(
-  () => certStore.selectedCert,
-  async (val) => {
-    const currentPath = route.path
-    if ((!val || !val.exam_code) && ['/learn', '/solve'].includes(currentPath)) {
-      window.dispatchEvent(new CustomEvent('show-cert-warning'))
-      router.replace('/dashboard')
-      return
-    }
-
-    if (val?.exam_code) {
-      const metadata = await examMetaStore.fetchMetadata(val.exam_code)
-      certStore.setExamMeta(metadata)
-    }
-  },
-  { immediate: true }
-)
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('mousedown', handleClickOutsideModal)
+})
+
+watch(user, (val) => {
+  if (val) {
+    showLoginModal.value = false
+  }
 })
 </script>

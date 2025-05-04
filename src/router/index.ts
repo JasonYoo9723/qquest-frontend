@@ -1,19 +1,34 @@
-// src\router\index.ts
+// src/router/index.ts
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import LearnPage from '@/views/LearnPage.vue'
 import SolvePage from '@/views/SolvePage.vue'
 import NotePage from '@/views/NotePage.vue'
 import DashboardPage from '@/views/DashboardPage.vue'
 import UploadPage from '@/views/UploadPage.vue'
-import { useCertificationStore } from '@/stores/certification'
+import ModifyPage from '@/views/ModifyPage.vue'
+import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/dashboard', component: DashboardPage },
-  { path: '/learn', component: LearnPage, meta: { requiresCert: true } },
-  { path: '/solve', component: SolvePage, meta: { requiresCert: true } },
+  { path: '/learn', component: LearnPage },
+  { path: '/solve', component: SolvePage },
   { path: '/note', component: NotePage },
-  { path: '/upload', component: UploadPage },
-  { path: '/', redirect: '/dashboard' }
+  
+  { 
+    path: '/dashboard',
+    component: DashboardPage,
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: '/upload',
+    component: UploadPage,
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/modify',
+    component: ModifyPage,
+    meta: { requiresAdmin: true }
+  },
+  { path: '/', redirect: '/learn' }
 ]
 
 const router = createRouter({
@@ -21,16 +36,14 @@ const router = createRouter({
   routes
 })
 
+// ✅ admin 권한 체크용 글로벌 가드 추가
 router.beforeEach((to, from, next) => {
-  const certStore = useCertificationStore()
+  const userStore = useUserStore()
+  const user = userStore.user
 
-  // 인증이 필요한 라우트인지 확인
-  const needsCert = to.meta.requiresCert === true
-  const selectedCert = certStore.selectedCert
-
-  if (needsCert && (!selectedCert || !selectedCert.exam_code)) {
-    window.dispatchEvent(new CustomEvent('show-cert-warning'))
-    return next('/dashboard')
+  if (to.meta.requiresAdmin && !user?.is_admin) {
+    alert('접근 권한이 없습니다. 관리자만 접근할 수 있습니다.')
+    return next('/')
   }
 
   next()

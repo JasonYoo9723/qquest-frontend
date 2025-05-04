@@ -1,12 +1,23 @@
-<!-- 예: src/views/LoginPage.vue -->
-<template>
-    <div class="login-page p-10">
-      <h1 class="text-xl font-bold mb-4">로그인</h1>
-      <GoogleLogin />
-    </div>
-  </template>
-  
-  <script setup>
-  import GoogleLogin from '@/components/GoogleLogin.vue'
-  </script>
-  
+<!-- src/views/LoginPage.vue -->
+<script setup lang="ts">
+import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+
+const userStore = useUserStore()
+const router = useRouter()
+
+function onGoogleLoginSuccess(response: any) {
+  const profile = response.getBasicProfile()
+  const idToken = response.getAuthResponse().id_token
+
+  userStore.setToken(idToken)
+  userStore.setUser({
+    email: profile.getEmail(),
+    name: profile.getName(),
+    picture: profile.getImageUrl(),
+    sub: profile.getId(),
+  })
+
+  router.push('/') // 로그인 후 홈으로 이동
+}
+</script>

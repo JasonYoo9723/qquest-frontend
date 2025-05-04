@@ -1,4 +1,3 @@
-<!-- src/views/LearnPage.vue -->
 <template>
   <div class="learn-page p-6 relative">
     <!-- 상단 타이틀 + ⚙️ -->
@@ -63,13 +62,16 @@ import { ref, onMounted, watch } from 'vue'
 import api from '@/lib/api'
 import { useLoadingStore } from '@/stores/loading'
 import { useCertificationStore } from '@/stores/certification'
+import { useExamMetaStore } from '@/stores/examMeta'
 import CategorySelector from '@/components/CategorySelector.vue'
 
 const question = ref(null)
 const selectedChoice = ref(null)
 const showAnswer = ref(false)
 const showCategory = ref(false)
+
 const certStore = useCertificationStore()
+const examMetaStore = useExamMetaStore()
 
 const yearOptions = ref([])
 const subjectOptions = ref([])
@@ -79,7 +81,7 @@ const category = ref({
   mode: 'RAN'
 })
 
-const currentIndex = ref(1) // 순차 모드에서 현재 문제 번호
+const currentIndex = ref(1)
 
 const toggleCategory = () => {
   showCategory.value = !showCategory.value
@@ -95,11 +97,9 @@ const fetchQuestion = async () => {
       subject: category.value.subject,
       mode: category.value.mode
     }
-
     if (category.value.mode === 'SEQ') {
       params.question_no = currentIndex.value
     }
-
     const res = await api.get('learn/random-question', { params })
     question.value = res.data
     selectedChoice.value = null
@@ -131,7 +131,13 @@ const nextQuestion = () => {
   fetchQuestion()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // ✅ examMeta 없으면 직접 불러오기
+  if (!certStore.examMeta && certStore.selectedCert?.exam_code) {
+    const meta = await examMetaStore.fetchMetadata(certStore.selectedCert.exam_code)
+    certStore.setExamMeta(meta)
+  }
+
   const meta = certStore.examMeta
   if (meta) {
     yearOptions.value = meta.years || []
@@ -158,7 +164,7 @@ watch(category, (newVal, oldVal) => {
     return
   }
   if (newVal.year && newVal.subject) {
-    currentIndex.value = 1 // 새로운 범주 선택 시 초기화
+    currentIndex.value = 1
     fetchQuestion()
   }
 }, { deep: true })

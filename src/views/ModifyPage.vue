@@ -1,42 +1,14 @@
-<!-- qquest-frontend/src/views/UploadPage.vue -->
+
+<!-- qquest-frontend/src/views/ModifyPage.vue -->
 <template>
   <div class="p-6 space-y-6">
-    <h1 class="text-2xl font-bold">문제등록</h1>
+    <h1 class="text-2xl font-bold">문제수정</h1>
 
     <!-- 시험 정보 입력 -->
-    <div class="grid grid-cols-2 gap-4 items-center">
-      <div class="flex gap-2 items-center">
-        <input
-          v-model="form.exam_code"
-          placeholder="시험코드"
-          class="border rounded p-1 text-sm w-32 text-black"
-        />
-        <button
-          class="bg-red-500 text-white text-sm px-2 py-1 rounded"
-          :disabled="!form.exam_code"
-          @click="fetchExamName"
-        >
-          자격증 확인
-        </button>
-      </div>
-      <div class="text-sm text-gray-700">
-        {{ examName || '자격증명 미확인' }}
-      </div>
-
-      <input
-        v-model="form.year"
-        type="number"
-        placeholder="년도"
-        class="border p-2 rounded text-black"
-        :disabled="!isExamLoaded"
-      />
-      <input
-        v-model="form.round"
-        type="number"
-        placeholder="회차"
-        class="border p-2 rounded text-black"
-        :disabled="!isExamLoaded"
-      />
+    <div class="grid grid-cols-2 gap-4">
+      <input v-model="form.exam_code" placeholder="시험코드 (예: realtor_1)" class="border p-2 rounded text-black" />
+      <input v-model="form.year" type="number" placeholder="년도" class="border p-2 rounded text-black" />
+      <input v-model="form.round" type="number" placeholder="회차" class="border p-2 rounded text-black" />
     </div>
 
     <!-- 파일 업로드 -->
@@ -47,21 +19,13 @@
     <!-- 파싱된 문제 미리보기 -->
     <div v-if="questions.length">
       <h2 class="text-lg font-semibold mt-4">문제 미리보기</h2>
-      <div
-        v-for="(q, i) in questions"
-        :key="i"
-        :ref="el => questionRefs[i] = el"
-        class="border p-3 rounded-xl mt-2"
-      >
-        <div class="mb-2 font-semibold">
-          문제 {{ q.question_no }}
-          <span class="text-xs text-gray-600">({{ q.subject_name || '과목 없음' }})</span>
-        </div>
+      <div v-for="(q, i) in questions" :key="i" :ref="el => questionRefs[i] = el" class="border p-3 rounded-xl mt-2">
+        <div class="mb-2 font-semibold">문제 {{ q.question_no }} <span class="text-xs text-gray-600">({{ q.subject_name || '과목 없음' }})</span></div>
 
         <label class="block text-sm text-gray-500 mb-1">원본 텍스트</label>
         <textarea
           v-model="q.raw"
-          rows="15"
+          rows="6"
           class="w-full border p-2 rounded text-black mb-3"
           @blur="reparse(i)"
         ></textarea>
@@ -70,10 +34,7 @@
         <textarea
           v-model="q.question_text"
           rows="3"
-          :class="[
-            'w-full p-2 rounded text-black font-medium border-4',
-            q.question_text.trim() === '' ? 'border-red-500 border-2' : 'border-gray-300'
-          ]"
+          :class="['w-full p-2 rounded text-black font-medium border-4', q.question_text.trim() === '' ? 'border-red-500 border-2' : 'border-gray-300']"
         ></textarea>
 
         <label class="block text-sm text-gray-500 mt-2">보기</label>
@@ -82,10 +43,7 @@
             <span class="w-6 font-bold">{{ idx + 1 }}.</span>
             <input
               v-model="q.choices[idx]"
-              :class="[
-                'flex-1 p-2 rounded text-black font-medium border-4',
-                q.choices[idx].trim() === '' ? 'border-red-500 border-2' : 'border-gray-300'
-              ]"
+              :class="['flex-1 p-2 rounded text-black font-medium border-4', q.choices[idx].trim() === '' ? 'border-red-500 border-2' : 'border-gray-300']"
             />
           </div>
         </div>
@@ -96,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, nextTick } from 'vue'
 import axios from 'axios'
 import { useLoadingStore } from '@/stores/loading'
 
@@ -106,10 +64,6 @@ const form = ref({
   round: null,
 })
 
-const examName = ref('')
-const isExamLoaded = computed(() => !!examName.value)
-
-const subjects = ref([])
 const questions = ref([])
 const questionRefs = ref([])
 
@@ -186,36 +140,13 @@ const handleFile = async (e) => {
   questions.value = generateQuestionBlocks(text)
 }
 
-const fetchExamName = async () => {
-  if (!form.value.exam_code.trim()) {
-    alert('시험코드를 입력하세요.')
-    return
-  }
-
-  try {
-    const res = await axios.get('http://localhost:8099/api/exams/info', {
-      params: { exam_code: form.value.exam_code }
-    })
-    examName.value = res.data.exam_name
-  } catch (err) {
-    console.error('❌ 자격증 정보 로딩 실패:', err)
-    alert('자격증 정보를 불러오지 못했습니다.')
-  }
-}
-
 const submit = async () => {
-  const subjectMap = Object.fromEntries(subjects.value.map(s => [s.subject_name.trim(), s.subject_code]))
-
   for (let i = 0; i < questions.value.length; i++) {
     const q = questions.value[i]
     if (q.question_text.trim() === '' || q.choices.some(c => c.trim() === '')) {
       await nextTick()
       questionRefs.value[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       alert(`${q.question_no}번 문제에 빈 항목이 있습니다. 확인해 주세요.`)
-      return
-    }
-    if (!subjectMap[q.subject_name.trim()]) {
-      alert(`${q.question_no}번 문제의 과목명 '${q.subject_name}'에 해당하는 과목 코드가 없습니다.`)
       return
     }
   }
@@ -227,7 +158,7 @@ const submit = async () => {
     questions: questions.value.map(q => ({
       question_no: q.question_no,
       question_text: q.question_text,
-      subject_code: subjectMap[q.subject_name.trim()],
+      subject_name: q.subject_name.trim(),
       choices: q.choices.map(c => ({ choice_content: c }))
     }))
   }
@@ -249,8 +180,7 @@ const submit = async () => {
 </script>
 
 <style scoped>
-input,
-textarea {
+input, textarea {
   background-color: white;
   color: black;
 }

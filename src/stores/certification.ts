@@ -2,9 +2,6 @@
 import { defineStore } from 'pinia'
 import api from '@/lib/api'
 
-// src/stores/certification.ts
-import { defineStore } from 'pinia'
-
 export const useCertificationStore = defineStore('cert', {
   state: () => ({
     certifications: [],
