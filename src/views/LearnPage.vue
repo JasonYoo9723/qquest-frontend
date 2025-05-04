@@ -1,3 +1,4 @@
+<!-- src/views/LearnPage.vue -->
 <template>
   <div class="learn-page p-6 relative">
     <!-- 상단 타이틀 + ⚙️ -->
@@ -9,7 +10,7 @@
     <!-- 범주 토글 -->
     <transition name="fade">
       <CategorySelector
-        v-if="showCategory"
+        v-if="showCategory && yearOptions.length > 0 && subjectOptions.length > 0"
         v-model="category"
         :year-options="yearOptions"
         :subject-options="subjectOptions"
@@ -58,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import api from '@/lib/api'
 import { useLoadingStore } from '@/stores/loading'
 import { useCertificationStore } from '@/stores/certification'
@@ -75,8 +76,10 @@ const subjectOptions = ref([])
 const category = ref({
   year: '',
   subject: '',
-  mode: '랜덤'
+  mode: 'RAN'
 })
+
+const currentIndex = ref(1) // 순차 모드에서 현재 문제 번호
 
 const toggleCategory = () => {
   showCategory.value = !showCategory.value
@@ -86,12 +89,18 @@ const fetchQuestion = async () => {
   const store = useLoadingStore()
   store.start()
   try {
-    const res = await api.get('learn/random-question', {
-      params: {
-        exam_code: certStore.selectedCert.exam_code,
-        ...category.value
-      }
-    })
+    const params = {
+      exam_code: certStore.selectedCert.exam_code,
+      year: category.value.year,
+      subject: category.value.subject,
+      mode: category.value.mode
+    }
+
+    if (category.value.mode === 'SEQ') {
+      params.question_no = currentIndex.value
+    }
+
+    const res = await api.get('learn/random-question', { params })
     question.value = res.data
     selectedChoice.value = null
     showAnswer.value = false
@@ -116,6 +125,9 @@ const getAnswerText = () => {
 }
 
 const nextQuestion = () => {
+  if (category.value.mode === 'SEQ') {
+    currentIndex.value += 1
+  }
   fetchQuestion()
 }
 
@@ -123,17 +135,33 @@ onMounted(() => {
   const meta = certStore.examMeta
   if (meta) {
     yearOptions.value = meta.years || []
-    subjectOptions.value = meta.subjects || []
+    subjectOptions.value = (meta.subjects || []).map(s => ({
+      label: s.subject_name,
+      value: s.subject_code
+    }))
 
-    // 범주의 기본값 설정
     category.value.year = yearOptions.value[0] || ''
-    category.value.subject = subjectOptions.value[0] || ''
+    category.value.subject = subjectOptions.value[0]?.value || ''
+    category.value.mode = 'RAN'
+
+    fetchQuestion()
   } else {
     console.warn('⚠️ examMeta 없음 - 초기 범주 설정 실패')
   }
-
-  fetchQuestion()
 })
+
+let isInitialLoad = true
+
+watch(category, (newVal, oldVal) => {
+  if (isInitialLoad) {
+    isInitialLoad = false
+    return
+  }
+  if (newVal.year && newVal.subject) {
+    currentIndex.value = 1 // 새로운 범주 선택 시 초기화
+    fetchQuestion()
+  }
+}, { deep: true })
 </script>
 
 <style scoped>

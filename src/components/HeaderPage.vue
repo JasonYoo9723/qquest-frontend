@@ -2,18 +2,14 @@
 <template>
   <header class="bg-white shadow-sm px-4 py-2 sticky top-0 z-50">
     <div class="container mx-auto max-w-7xl flex items-center justify-between">
-      <!-- 왼쪽: 로고 + 자격증 선택 -->
+      <!-- 왼쪽 로고 및 자격증 선택 -->
       <div class="flex items-center gap-2">
-        <!-- 로고 -->
         <RouterLink to="/" class="text-2xl font-bold flex items-center whitespace-nowrap">
-          <span class="text-red-600">Q</span>
-          <span class="text-red-600">Q</span><span class="text-black">uest</span>
+          <span class="text-red-600">Q</span><span class="text-red-600">Q</span><span class="text-black">uest</span>
         </RouterLink>
 
-        <!-- 구분선 -->
         <div class="w-px h-6 bg-gray-300 mx-1"></div>
 
-        <!-- 자격증 선택 -->
         <div id="cert-dropdown" class="relative">
           <span
             @click="toggleDropdown"
@@ -26,11 +22,7 @@
             </svg>
           </span>
 
-          <!-- 드롭다운 -->
-          <ul
-            v-if="showDropdown"
-            class="absolute bg-white border rounded shadow-md mt-1 py-1 w-40 z-50"
-          >
+          <ul v-if="showDropdown" class="absolute bg-white border rounded shadow-md mt-1 py-1 w-40 z-50">
             <li v-for="(cert, index) in certStore.certifications" :key="index">
               <a
                 href="#"
@@ -44,12 +36,9 @@
         </div>
       </div>
 
-      <!-- 햄버거 메뉴 버튼 -->
-      <button @click="toggleMenu" class="md:hidden text-2xl text-gray-800 focus:outline-none ml-2">
-        ☰
-      </button>
+      <button @click="toggleMenu" class="md:hidden text-2xl text-gray-800 focus:outline-none ml-2">☰</button>
 
-      <!-- 데스크탑 네비게이션 -->
+      <!-- 데스크탑 메뉴 -->
       <nav class="hidden md:flex gap-6 text-sm text-gray-700">
         <RouterLink to="/learn" class="hover:underline">학습하기</RouterLink>
         <RouterLink to="/solve" class="hover:underline">문제풀기</RouterLink>
@@ -57,10 +46,9 @@
         <RouterLink to="/dashboard" class="hover:underline">대시보드</RouterLink>
       </nav>
 
-      <!-- 오른쪽 버튼 -->
       <div class="hidden md:flex gap-3 text-sm">
-        <button class="text-gray-600 hover:text-black">+ 만들기</button>
-        <button class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
+        <button @click="handleLoginClick" class="text-gray-600 hover:text-black">+ 만들기</button>
+        <button @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
       </div>
     </div>
 
@@ -73,8 +61,8 @@
         <RouterLink to="/dashboard" @click="closeMenu" class="hover:underline">대시보드</RouterLink>
 
         <div class="flex gap-3 mt-2">
-          <button class="text-gray-600 hover:text-black">+ 만들기</button>
-          <button class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
+          <button @click="handleLoginClick" class="text-gray-600 hover:text-black">+ 만들기</button>
+          <button @click="handleLoginClick" class="bg-red-600 text-white px-4 py-1 rounded-full hover:bg-red-700">로그인</button>
         </div>
       </nav>
     </div>
@@ -86,9 +74,11 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useCertificationStore } from '@/stores/certification'
 import { useExamMetaStore } from '@/stores/examMeta'
+import { useUserStore } from '@/stores/user'
 
-const examMetaStore = useExamMetaStore()
 const certStore = useCertificationStore()
+const examMetaStore = useExamMetaStore()
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -113,12 +103,31 @@ function selectCert(cert) {
   closeMenu()
 }
 
-// 외부 클릭 감지 → 드롭다운 닫기
 function handleClickOutside(event) {
   const dropdown = document.getElementById('cert-dropdown')
   if (dropdown && !dropdown.contains(event.target)) {
     showDropdown.value = false
   }
+}
+
+async function handleLoginClick() {
+  if (userStore.user) {
+    router.push('/dashboard')
+    return
+  }
+
+  const client = window.google?.accounts?.id
+  if (!client) {
+    alert("Google 로그인 초기화가 필요합니다.")
+    return
+  }
+
+  client.prompt((notification) => {
+    console.log("notification",notification)
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      alert("Google 로그인 창이 표시되지 않았습니다.")
+    }
+  })
 }
 
 onMounted(async () => {
@@ -130,7 +139,6 @@ watch(
   () => certStore.selectedCert,
   async (val) => {
     const currentPath = route.path
-
     if ((!val || !val.exam_code) && ['/learn', '/solve'].includes(currentPath)) {
       window.dispatchEvent(new CustomEvent('show-cert-warning'))
       router.replace('/dashboard')
@@ -139,7 +147,6 @@ watch(
 
     if (val?.exam_code) {
       const metadata = await examMetaStore.fetchMetadata(val.exam_code)
-      console.log("metadata:::"+metadata)
       certStore.setExamMeta(metadata)
     }
   },
