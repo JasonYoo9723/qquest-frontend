@@ -1,3 +1,4 @@
+// src\main.ts
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -17,7 +18,7 @@ app.use(router)
 // 3. ✅ Pinia 등록 이후에 store 사용 (중요)
 import { useUserStore } from './stores/user'
 const userStore = useUserStore()
-userStore.loadFromStorage()
+await userStore.loadFromStorage()
 
 // 4. 앱 마운트
 app.mount('#app')

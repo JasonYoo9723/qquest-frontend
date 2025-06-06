@@ -1,12 +1,10 @@
 <template>
   <div class="learn-page p-6 relative">
-    <!-- 상단 타이틀 + ⚙️ -->
     <div class="flex items-center justify-between mb-2">
       <h2 class="text-xl md:text-2xl font-semibold">📘 학습하기</h2>
       <button @click="toggleCategory" class="text-2xl" aria-label="범주 설정">⚙️</button>
     </div>
 
-    <!-- 범주 토글 -->
     <transition name="fade">
       <CategorySelector
         v-if="showCategory && yearOptions.length > 0 && subjectOptions.length > 0"
@@ -16,7 +14,6 @@
       />
     </transition>
 
-    <!-- 문제 카드 -->
     <div v-if="question" class="question-card bg-white text-black p-6 rounded-xl shadow-md">
       <p class="text-sm text-gray-500 mb-2">
         {{ question.exam_name }} | {{ question.year }}년도 {{ question.round }}회 <br />
@@ -41,8 +38,11 @@
         </li>
       </ul>
 
-      <div v-if="showAnswer" class="mt-4 text-green-600 font-bold">
-        ✅ 정답: {{ parseInt(question.answer) + 1 }}. {{ getAnswerText() }}
+      <div v-if="showAnswer && !isNaN(parseInt(question.answer))" class="mt-4 text-green-600 font-bold">
+        ✅ 정답: {{ parseInt(question.answer) }}. {{ getAnswerText() }}
+      </div>
+      <div v-else-if="showAnswer" class="mt-4 text-red-600 font-bold">
+        ⚠️ 정답 정보가 없습니다
       </div>
 
       <button
@@ -64,6 +64,7 @@ import { useLoadingStore } from '@/stores/loading'
 import { useCertificationStore } from '@/stores/certification'
 import { useExamMetaStore } from '@/stores/examMeta'
 import CategorySelector from '@/components/CategorySelector.vue'
+import { useUserStore } from '@/stores/user'
 
 const question = ref(null)
 const selectedChoice = ref(null)
@@ -112,15 +113,30 @@ const fetchQuestion = async () => {
   }
 }
 
-const handleChoice = (number) => {
+const handleChoice = async (number) => {
   if (!showAnswer.value) {
     selectedChoice.value = number
     showAnswer.value = true
+
+    const correct = parseInt(question.value.answer)
+    if (number !== correct) {
+      const userStore = useUserStore()
+      if (userStore.isLoggedIn) {
+        try {
+          await api.post('/wrong-note/add', {
+            question_id: question.value.id
+          })
+        } catch (err) {
+          console.error('오답노트 저장 실패:', err)
+        }
+      }
+    }
   }
 }
 
 const getAnswerText = () => {
   const answerNum = parseInt(question.value.answer)
+  if (isNaN(answerNum)) return ''
   return question.value.choices.find(c => c.number === answerNum)?.content || ''
 }
 
@@ -131,15 +147,11 @@ const nextQuestion = () => {
   fetchQuestion()
 }
 
-onMounted(async () => {
-  // ✅ examMeta 없으면 직접 불러오기
-  if (!certStore.examMeta && certStore.selectedCert?.exam_code) {
+const initCategoryAndQuestion = async () => {
+  if (certStore.selectedCert?.exam_code) {
     const meta = await examMetaStore.fetchMetadata(certStore.selectedCert.exam_code)
     certStore.setExamMeta(meta)
-  }
 
-  const meta = certStore.examMeta
-  if (meta) {
     yearOptions.value = meta.years || []
     subjectOptions.value = (meta.subjects || []).map(s => ({
       label: s.subject_name,
@@ -150,9 +162,18 @@ onMounted(async () => {
     category.value.subject = subjectOptions.value[0]?.value || ''
     category.value.mode = 'RAN'
 
+    currentIndex.value = 1
     fetchQuestion()
-  } else {
-    console.warn('⚠️ examMeta 없음 - 초기 범주 설정 실패')
+  }
+}
+
+onMounted(async () => {
+  await initCategoryAndQuestion()
+})
+
+watch(() => certStore.selectedCert, async (newCert, oldCert) => {
+  if (newCert?.exam_code && newCert.exam_code !== oldCert?.exam_code) {
+    await initCategoryAndQuestion()
   }
 })
 

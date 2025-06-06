@@ -1,7 +1,16 @@
 <!-- qquest-frontend/src/views/UploadPage.vue -->
 <template>
   <div class="p-6 space-y-6">
-    <h1 class="text-2xl font-bold">문제등록</h1>
+    <!-- 상단 타이틀과 정답 업로드 버튼 -->
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold">문제등록</h1>
+      <RouterLink
+        to="/answers"
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ml-auto"
+      >
+        정답 업로드
+      </RouterLink>
+    </div>
 
     <!-- 시험 정보 입력 -->
     <div class="grid grid-cols-2 gap-4 items-center">
@@ -70,10 +79,7 @@
         <textarea
           v-model="q.question_text"
           rows="3"
-          :class="[
-            'w-full p-2 rounded text-black font-medium border-4',
-            q.question_text.trim() === '' ? 'border-red-500 border-2' : 'border-gray-300'
-          ]"
+          :class="[ 'w-full p-2 rounded text-black font-medium border-4', q.question_text.trim() === '' ? 'border-red-500 border-2' : 'border-gray-300' ]"
         ></textarea>
 
         <label class="block text-sm text-gray-500 mt-2">보기</label>
@@ -82,10 +88,7 @@
             <span class="w-6 font-bold">{{ idx + 1 }}.</span>
             <input
               v-model="q.choices[idx]"
-              :class="[
-                'flex-1 p-2 rounded text-black font-medium border-4',
-                q.choices[idx].trim() === '' ? 'border-red-500 border-2' : 'border-gray-300'
-              ]"
+              :class="[ 'flex-1 p-2 rounded text-black font-medium border-4', q.choices[idx].trim() === '' ? 'border-red-500 border-2' : 'border-gray-300' ]"
             />
           </div>
         </div>
@@ -191,9 +194,9 @@ const fetchExamName = async () => {
     alert('시험코드를 입력하세요.')
     return
   }
-
   try {
-    const res = await axios.get('http://localhost:8099/api/exams/info', {
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL
+    const res = await axios.get(`${BASE_URL}/exams/info`, {
       params: { exam_code: form.value.exam_code }
     })
     examName.value = res.data.exam_name
@@ -237,7 +240,8 @@ const submit = async () => {
   const store = useLoadingStore()
   store.start()
   try {
-    await axios.post("http://localhost:8099/api/admin/save-questions", payload)
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL
+    await axios.post(`${BASE_URL}/admin/save-questions`, payload)
     alert('저장 완료!')
   } catch (err) {
     console.error('❌ 저장 실패:', err)
