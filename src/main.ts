@@ -17,11 +17,13 @@ app.use(router)
 
 // 3. ✅ Pinia 등록 이후에 store 사용 (중요)
 import { useUserStore } from './stores/user'
-const userStore = useUserStore()
-await userStore.loadFromStorage()
 
-// 4. 앱 마운트
-app.mount('#app')
+const init = async () => {
+  const userStore = useUserStore()
+  await userStore.loadFromStorage()
+
+  app.mount('#app')
+}
 
 // 5. ✅ Google GSI 로그인 스크립트 삽입 및 초기화
 const script = document.createElement('script')
@@ -68,3 +70,4 @@ script.onload = () => {
 }
 
 document.head.appendChild(script)
+init()
