@@ -1,3 +1,4 @@
+<!-- LearnPage.vue -->
 <template>
   <div class="learn-page p-6 relative">
     <div class="flex items-center justify-between mb-2">
@@ -7,10 +8,11 @@
 
     <transition name="fade">
       <CategorySelector
-        v-if="showCategory && yearOptions.length > 0 && subjectOptions.length > 0"
-        v-model="category"
+        v-if="showCategory"
         :year-options="yearOptions"
         :subject-options="subjectOptions"
+        :session-options="sessionOptions"
+        @confirm="handleConfirm"
       />
     </transition>
 
@@ -53,12 +55,12 @@
       </button>
     </div>
 
-    <div v-else class="text-gray-400">문제를 불러오는 중입니다...</div>
+    <div v-else class="text-gray-400">문제를 보러오는 중입니다...</div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import api from '@/lib/api'
 import { useLoadingStore } from '@/stores/loading'
 import { useCertificationStore } from '@/stores/certification'
@@ -76,9 +78,12 @@ const examMetaStore = useExamMetaStore()
 
 const yearOptions = ref([])
 const subjectOptions = ref([])
-const category = ref({
+const sessionOptions = ref([])
+
+const category = reactive({
   year: '',
   subject: '',
+  session: '',
   mode: 'RAN'
 })
 
@@ -94,11 +99,12 @@ const fetchQuestion = async () => {
   try {
     const params = {
       exam_code: certStore.selectedCert.exam_code,
-      year: category.value.year,
-      subject: category.value.subject,
-      mode: category.value.mode
+      year: category.year,
+      subject: category.subject,
+      session: category.session,
+      mode: category.mode
     }
-    if (category.value.mode === 'SEQ') {
+    if (category.mode === 'SEQ') {
       params.question_no = currentIndex.value
     }
     const res = await api.get('learn/random-question', { params })
@@ -106,7 +112,7 @@ const fetchQuestion = async () => {
     selectedChoice.value = null
     showAnswer.value = false
   } catch (err) {
-    alert('오류가 발생했습니다. 콘솔을 확인해 주세요.')
+    alert('문제 불러오기 오류 (콘솔 확인)')
     console.error(err)
   } finally {
     store.stop()
@@ -117,15 +123,12 @@ const handleChoice = async (number) => {
   if (!showAnswer.value) {
     selectedChoice.value = number
     showAnswer.value = true
-
     const correct = parseInt(question.value.answer)
     if (number !== correct) {
       const userStore = useUserStore()
       if (userStore.isLoggedIn) {
         try {
-          await api.post('/wrong-note/add', {
-            question_id: question.value.id
-          })
+          await api.post('/wrong-note/add', { question_id: question.value.id })
         } catch (err) {
           console.error('오답노트 저장 실패:', err)
         }
@@ -141,54 +144,50 @@ const getAnswerText = () => {
 }
 
 const nextQuestion = () => {
-  if (category.value.mode === 'SEQ') {
+  if (category.mode === 'SEQ') {
     currentIndex.value += 1
   }
   fetchQuestion()
 }
 
-const initCategoryAndQuestion = async () => {
-  if (certStore.selectedCert?.exam_code) {
-    const meta = await examMetaStore.fetchMetadata(certStore.selectedCert.exam_code)
-    certStore.setExamMeta(meta)
+const handleConfirm = (newCategory) => {
 
-    yearOptions.value = meta.years || []
-    subjectOptions.value = (meta.subjects || []).map(s => ({
-      label: s.subject_name,
-      value: s.subject_code
-    }))
+  Object.assign(category, newCategory)
+  currentIndex.value = 1
+  showCategory.value = false
 
-    category.value.year = yearOptions.value[0] || ''
-    category.value.subject = subjectOptions.value[0]?.value || ''
-    category.value.mode = 'RAN'
-
-    currentIndex.value = 1
-    fetchQuestion()
-  }
+  
+  fetchQuestion()
 }
 
-onMounted(async () => {
-  await initCategoryAndQuestion()
-})
+const initCategoryAndQuestion = async () => {
+  if (!certStore.selectedCert?.exam_code) return
 
-watch(() => certStore.selectedCert, async (newCert, oldCert) => {
-  if (newCert?.exam_code && newCert.exam_code !== oldCert?.exam_code) {
-    await initCategoryAndQuestion()
-  }
-})
+  const meta = await examMetaStore.fetchMetadata(certStore.selectedCert.exam_code)
+  certStore.setExamMeta(meta)
 
-let isInitialLoad = true
+  yearOptions.value = meta.years || []
+  subjectOptions.value = (meta.subjects || []).map(s => ({
+    label: s.subject_name,
+    value: s.subject_code,
+    session: s.session
+  }))
+  sessionOptions.value = meta.sessions || []
 
-watch(category, (newVal, oldVal) => {
-  if (isInitialLoad) {
-    isInitialLoad = false
-    return
-  }
-  if (newVal.year && newVal.subject) {
-    currentIndex.value = 1
-    fetchQuestion()
-  }
-}, { deep: true })
+  const defaultSession = sessionOptions.value[0] || ''
+  const defaultSubject = subjectOptions.value.find(s => s.session === defaultSession)?.value || ''
+  const defaultYear = yearOptions.value[0] || ''
+
+  category.year = defaultYear
+  category.session = defaultSession
+  category.subject = defaultSubject
+  category.mode = 'RAN'
+
+  await nextTick()
+  fetchQuestion()
+}
+
+onMounted(initCategoryAndQuestion)
 </script>
 
 <style scoped>
@@ -196,7 +195,6 @@ watch(category, (newVal, oldVal) => {
   max-width: 720px;
   margin: auto;
 }
-
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.3s ease;

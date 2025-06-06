@@ -55,7 +55,6 @@ script.onload = () => {
 
       try {
         await userStore.loadFromStorage()
-        console.log('✅ 사용자 정보 로드 완료')
       } catch (err) {
         console.error('❌ 사용자 정보 로드 실패', err)
       }
@@ -66,7 +65,6 @@ script.onload = () => {
     cancel_on_tap_outside: false,
   })
 
-  console.log('✅ Google 로그인 초기화 완료')
 }
 
 document.head.appendChild(script)

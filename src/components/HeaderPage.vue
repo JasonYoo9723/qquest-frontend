@@ -40,8 +40,8 @@
 
       <!-- 데스크탑 메뉴 -->
       <nav class="hidden md:flex gap-6 text-sm text-gray-700">
-        <RouterLink to="/learn" class="hover:underline">문제풀기</RouterLink>
-        <!-- <RouterLink to="/solve" class="hover:underline">문제풀기</RouterLink> -->
+        <RouterLink to="/learn" class="hover:underline">학습하기</RouterLink>
+        <!-- <RouterLink to="/solve" class="hover:underline">시험보기</RouterLink> -->
         <RouterLink to="/wrong" class="hover:underline">오답노트</RouterLink>
         <RouterLink v-if="user?.is_admin" to="/dashboard" class="hover:underline">대시보드</RouterLink>
         <RouterLink v-if="user?.is_admin" to="/upload" class="hover:underline">문제등록</RouterLink>
@@ -59,7 +59,7 @@
     <!-- 모바일 메뉴 -->
     <div v-if="menuOpen" class="md:hidden bg-white text-black px-4 pt-4 pb-2">
       <nav class="flex flex-col gap-3 text-sm">
-        <RouterLink to="/learn" @click="closeMenu" class="hover:underline">문제풀기</RouterLink>
+        <RouterLink to="/learn" @click="closeMenu" class="hover:underline">학습하기</RouterLink>
         <!-- <RouterLink to="/solve" @click="closeMenu" class="hover:underline">문제풀기</RouterLink> -->
         <RouterLink to="/wrong" @click="closeMenu" class="hover:underline">오답노트</RouterLink>
         <RouterLink to="/dashboard" @click="closeMenu" class="hover:underline">대시보드</RouterLink>

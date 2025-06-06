@@ -46,6 +46,13 @@
         class="border p-2 rounded text-black"
         :disabled="!isExamLoaded"
       />
+      <input
+        v-model="form.session"
+        type="number"
+        placeholder="교시 (예: 1)"
+        class="border p-2 rounded text-black"
+        :disabled="!isExamLoaded"
+      />
     </div>
 
     <!-- 파일 업로드 -->
@@ -62,10 +69,14 @@
         :ref="el => questionRefs[i] = el"
         class="border p-3 rounded-xl mt-2"
       >
-        <div class="mb-2 font-semibold">
-          문제 {{ q.question_no }}
-          <span class="text-xs text-gray-600">({{ q.subject_name || '과목 없음' }})</span>
-        </div>
+      <div class="mb-2 font-semibold">
+        문제 {{ q.question_no }}
+        <input
+          v-model="q.subject_name"
+          placeholder="과목명 입력"
+          class="ml-2 px-2 py-1 border rounded text-sm text-black"
+        />
+      </div>
 
         <label class="block text-sm text-gray-500 mb-1">원본 텍스트</label>
         <textarea
@@ -99,14 +110,16 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import axios from 'axios'
 import { useLoadingStore } from '@/stores/loading'
+import { useExamMetaStore } from '@/stores/examMeta'
 
 const form = ref({
   exam_code: '',
   year: null,
   round: null,
+  session: null,
 })
 
 const examName = ref('')
@@ -115,6 +128,18 @@ const isExamLoaded = computed(() => !!examName.value)
 const subjects = ref([])
 const questions = ref([])
 const questionRefs = ref([])
+
+watch(() => form.value.session, async (newSession) => {
+  if (form.value.exam_code && newSession) {
+    const examMetaStore = useExamMetaStore()
+    const { subjects: loadedSubjects } = await examMetaStore.fetchMetadata(
+      form.value.exam_code,
+      form.value.session,
+      true 
+    )
+    subjects.value = loadedSubjects
+  }
+})
 
 function splitQuestionAndChoices(block) {
   let question_text = ''
@@ -200,6 +225,7 @@ const fetchExamName = async () => {
       params: { exam_code: form.value.exam_code }
     })
     examName.value = res.data.exam_name
+    form.value.session = 1
   } catch (err) {
     console.error('❌ 자격증 정보 로딩 실패:', err)
     alert('자격증 정보를 불러오지 못했습니다.')
@@ -211,14 +237,16 @@ const submit = async () => {
 
   for (let i = 0; i < questions.value.length; i++) {
     const q = questions.value[i]
+    
+    if (!subjectMap[q.subject_name.trim()]) {
+      alert(`${q.question_no}번 문제의 과목명 '${q.subject_name}'에 해당하는 과목 코드가 없습니다.`)
+      return
+    }
+    
     if (q.question_text.trim() === '' || q.choices.some(c => c.trim() === '')) {
       await nextTick()
       questionRefs.value[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       alert(`${q.question_no}번 문제에 빈 항목이 있습니다. 확인해 주세요.`)
-      return
-    }
-    if (!subjectMap[q.subject_name.trim()]) {
-      alert(`${q.question_no}번 문제의 과목명 '${q.subject_name}'에 해당하는 과목 코드가 없습니다.`)
       return
     }
   }
@@ -227,6 +255,7 @@ const submit = async () => {
     exam_code: form.value.exam_code,
     year: form.value.year,
     round: form.value.round,
+    session: form.value.session,
     questions: questions.value.map(q => ({
       question_no: q.question_no,
       question_text: q.question_text,
@@ -234,8 +263,6 @@ const submit = async () => {
       choices: q.choices.map(c => ({ choice_content: c }))
     }))
   }
-
-  console.log('📦 전송 데이터:', JSON.stringify(payload, null, 2))
 
   const store = useLoadingStore()
   store.start()

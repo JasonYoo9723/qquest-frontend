@@ -27,9 +27,7 @@
   
     api.post('/auth/google-login', { credential: idToken })
       .then(res => {
-        console.log('✅ 로그인 성공:', res.data)
         alert(`로그인 성공: ${res.data.user.name}`)
-        // 예: localStorage.setItem('token', res.data.access_token)
       })
       .catch(err => {
         console.error('❌ 로그인 실패:', err)
