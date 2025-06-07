@@ -67,7 +67,7 @@ export const useExamMetaStore = defineStore('examMetaStore', {
       if (!sessionMeta) return []
 
       return Object.entries(sessionMeta).map(([subject_code, data]) => ({
-        subject_code: data.subject_code,
+        subject_code: subject_code,
         subject_name: data.subject_name,
         start_no: data.start_no
       }))
@@ -81,10 +81,9 @@ export const useExamMetaStore = defineStore('examMetaStore', {
       subject_code: string
     ): number {
       const subjects =
-        this.examMetaMap?.[exam_code]?.meta?.[year]?.[round]?.[session] || []
+        this.examMetaMap?.[exam_code]?.meta?.[year]?.[round]?.[session] || {}
 
-      const subject = subjects.find(s => s.subject_code === subject_code)
-
+      const subject = subjects[subject_code]
       return subject?.start_no || 1
     }
   }

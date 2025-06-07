@@ -71,9 +71,6 @@ const props = defineProps({
 })
 
 const examMeta = useExamMetaStore()
-onMounted(() => {
-  examMeta.fetchMeta()
-})
 
 const model = ref({
   exam: Cookies.get('last_exam') || '',
@@ -84,17 +81,17 @@ const model = ref({
   mode: Cookies.get('last_mode') || 'RAN'
 })
 
-// 부모로부터 props 변경 시 반영
-watch(() => props.modelValue, (val) => {
-  Object.assign(model.value, val)
-}, { deep: true })
+onMounted(() => {
+  examMeta.fetchMeta()
+  if (props.modelValue) {
+    Object.assign(model.value, props.modelValue)
+  }
+})
 
-// model 변경 시 상위로 emit
 watch(model, (val) => {
   emit('update:modelValue', val)
 }, { deep: true })
 
-// 옵션들
 const examOptions = computed(() => examMeta.getExamCodes())
 const yearOptions = computed(() =>
   model.value.exam ? examMeta.getYears(model.value.exam) : []
@@ -113,10 +110,8 @@ const filteredSubjects = computed(() =>
   model.value.exam && model.value.year && model.value.round && model.value.session
     ? examMeta.getSubjects(model.value.exam, model.value.year, model.value.round, model.value.session)
     : []
-
 )
 
-// 쿠키 값이 유효하지 않으면 자동으로 첫 번째 값 설정
 watch(examOptions, (opts) => {
   if (opts.length && !opts.find(opt => opt.value === model.value.exam)) {
     model.value.exam = opts[0].value
@@ -138,12 +133,12 @@ watch(sessionOptions, (opts) => {
   }
 })
 watch(filteredSubjects, (subjects) => {
-  if (subjects.length && !subjects.find(s => s.subject_code === model.value.subject)) {
-    model.value.subject = subjects[0].subject_code
+  const codes = subjects.map(s => s.subject_code)
+  if (codes.length && !codes.includes(model.value.subject)) {
+    model.value.subject = codes[0]
   }
 })
 
-// 확인 버튼 클릭 시 쿠키에 저장 + 이벤트 emit
 const confirmSelection = () => {
   Cookies.set('last_exam', model.value.exam, { expires: 7 })
   Cookies.set('last_year', model.value.year, { expires: 7 })

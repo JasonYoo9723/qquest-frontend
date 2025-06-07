@@ -86,6 +86,8 @@ const fetchQuestion = async () => {
   const store = useLoadingStore()
   const c = selectedCategory.value
 
+  console.log("c", c)
+
   if (!c.exam || !c.year || !c.round || !c.session || !c.subject) {
     console.warn('카테고리가 완전하지 않아 문제 조회를 건너뜁니다.')
     return

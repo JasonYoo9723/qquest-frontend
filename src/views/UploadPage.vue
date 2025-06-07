@@ -27,6 +27,7 @@
         >
           자격증 확인
         </button>
+        <div></div>
       </div>
       <div class="text-sm text-gray-700">
         {{ examName || '자격증명 미확인' }}
@@ -42,14 +43,14 @@
       <input
         v-model="form.round"
         type="number"
-        placeholder="회차"
+        placeholder="차수"
         class="border p-2 rounded text-black"
         :disabled="!isExamLoaded"
       />
       <input
         v-model="form.session"
         type="number"
-        placeholder="교시 (예: 1)"
+        placeholder="교시"
         class="border p-2 rounded text-black"
         :disabled="!isExamLoaded"
       />
@@ -110,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { useLoadingStore } from '@/stores/loading'
 import { useExamMetaStore } from '@/stores/examMeta'
@@ -129,14 +130,21 @@ const subjects = ref([])
 const questions = ref([])
 const questionRefs = ref([])
 
+onMounted(async () => {
+  const examMeta = useExamMetaStore()
+  await examMeta.fetchMeta()
+})
+
 watch(() => form.value.session, async (newSession) => {
-  if (form.value.exam_code && newSession) {
+  if (form.value.exam_code && form.value.year && form.value.round && newSession) {
     const examMetaStore = useExamMetaStore()
-    const { subjects: loadedSubjects } = await examMetaStore.fetchMetadata(
+    const loadedSubjects = examMetaStore.getSubjects(
       form.value.exam_code,
-      form.value.session,
-      true 
+      form.value.year,
+      form.value.round,
+      newSession
     )
+  
     subjects.value = loadedSubjects
   }
 })
@@ -225,7 +233,7 @@ const fetchExamName = async () => {
       params: { exam_code: form.value.exam_code }
     })
     examName.value = res.data.exam_name
-    form.value.session = 1
+    
   } catch (err) {
     console.error('❌ 자격증 정보 로딩 실패:', err)
     alert('자격증 정보를 불러오지 못했습니다.')

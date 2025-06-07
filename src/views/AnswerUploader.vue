@@ -3,7 +3,7 @@
     <h1 class="text-2xl font-bold">정답 업로드</h1>
 
     <!-- 시험 정보 입력 -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-4 gap-4">
       <input
         v-model="form.exam_code"
         placeholder="시험코드 (예: realtor_1)"
@@ -21,6 +21,12 @@
         placeholder="회차 (예: 1)"
         class="border p-2 rounded text-black"
       />
+      <input
+        v-model.number="form.session"
+        type="number"
+        placeholder="교시 (예: 1)"
+        class="border p-2 rounded text-black"
+      />
     </div>
 
     <!-- 붙여넣기 정답 입력 -->
@@ -31,7 +37,10 @@
     ></textarea>
 
     <!-- 업로드 버튼 -->
-    <button @click="uploadAnswers" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+    <button
+      @click="uploadAnswers"
+      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
       업로드
     </button>
   </div>
@@ -46,6 +55,7 @@ const form = ref({
   exam_code: '',
   year: null,
   round: null,
+  session: null, // 교시 추가
 })
 
 function parseText() {
@@ -67,8 +77,8 @@ function parseText() {
 }
 
 async function uploadAnswers() {
-  if (!form.value.exam_code || !form.value.year || !form.value.round) {
-    alert("시험 정보(시험코드, 년도, 회차)를 모두 입력해 주세요.")
+  if (!form.value.exam_code || !form.value.year || !form.value.round || !form.value.session) {
+    alert("시험 정보(시험코드, 년도, 회차, 교시)를 모두 입력해 주세요.")
     return
   }
 
@@ -76,6 +86,7 @@ async function uploadAnswers() {
     exam_code: form.value.exam_code,
     year: form.value.year,
     round: form.value.round,
+    session: form.value.session,
     answers: parseText()
   }
 
