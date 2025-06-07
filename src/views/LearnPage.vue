@@ -150,6 +150,8 @@ const nextQuestion = () => {
   if (selectedCategory.value.mode === 'SEQ') {
     currentIndex.value += 1
   }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  
   fetchQuestion()
 }
 
