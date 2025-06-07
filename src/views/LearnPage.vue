@@ -15,20 +15,20 @@
       />
     </transition>
 
-    <div v-if="question" class="question-card bg-white text-black p-6 rounded-xl shadow-md">
-      <p class="text-sm text-gray-500 mb-2">
+    <div v-if="question" class="question-card bg-white text-black p-1 rounded-xl shadow-md">
+      <p class="text-sm text-gray-600 mb-1">
         {{ question.exam_name }} | {{ question.year }}년도 {{ question.round }}회 <br />
         {{ question.subject_name }}
       </p>
-      <p class="text-lg font-semibold mb-4 whitespace-pre-line">
+      <p class="text-lg font-semibold mb-2 whitespace-pre-line">
         {{ question.question_no }}. {{ question.question_text }}
       </p>
 
-      <ul class="space-y-2">
+      <ul class="space-y-1">
         <li
           v-for="(c, index) in question.choices"
           :key="index"
-          class="border rounded-lg p-3 cursor-pointer hover:bg-gray-100"
+          class="border rounded-lg p-2 cursor-pointer hover:bg-gray-100"
           :class="{
             'bg-green-100 border-green-400': showAnswer && c.number === parseInt(question.answer),
             'bg-red-100 border-red-400': showAnswer && selectedChoice === c.number && c.number !== parseInt(question.answer)
@@ -151,7 +151,7 @@ const nextQuestion = () => {
     currentIndex.value += 1
   }
   window.scrollTo({ top: 0, behavior: 'smooth' })
-  
+
   fetchQuestion()
 }
 
