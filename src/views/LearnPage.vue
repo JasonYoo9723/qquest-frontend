@@ -1,11 +1,11 @@
 <!-- src\views\LearnPage.vue -->
 <template>
-  <div class="learn-page w-full max-w-screen-md mx-auto px-2 sm:px-6 py-4 relative">
+  <div class="learn-page w-full max-w-screen-md mx-auto px-1 sm:px-6 py-4 relative">
     <div class="flex items-center justify-between mb-2">
       <h2 class="text-xl md:text-2xl font-semibold">📘 학습하기</h2>
       <button @click="toggleCategory" class="text-2xl" aria-label="범주 설정">⚙️</button>
     </div>
-    <hr class="border-t border-gray-600 my-10" />
+    <hr class="border-t border-gray-600 my-3" />
 
     <transition name="fade">
       <CategorySelector
