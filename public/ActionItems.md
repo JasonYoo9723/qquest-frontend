@@ -1,7 +1,7 @@
 # 🚀 QuizQuest 프로젝트 Action Items
 ---
 ### TODO
-- [ ] 모바일 화면 최적화
+- [x] 모바일 화면 최적화
 - [ ] 로그인 세션 늘리기
 - [ ] Admin 통계 Page
   - [ ] 접속자 통계
