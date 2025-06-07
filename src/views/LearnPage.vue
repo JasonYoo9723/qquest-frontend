@@ -1,17 +1,16 @@
-<!-- LearnPage.vue -->
+<!-- src\views\LearnPage.vue -->
 <template>
   <div class="learn-page p-6 relative">
     <div class="flex items-center justify-between mb-2">
       <h2 class="text-xl md:text-2xl font-semibold">📘 학습하기</h2>
       <button @click="toggleCategory" class="text-2xl" aria-label="범주 설정">⚙️</button>
     </div>
+    <hr class="border-t border-gray-600 my-10" />
 
     <transition name="fade">
       <CategorySelector
         v-if="showCategory"
-        :year-options="yearOptions"
-        :subject-options="subjectOptions"
-        :session-options="sessionOptions"
+        v-model="selectedCategory"
         @confirm="handleConfirm"
       />
     </transition>
@@ -47,47 +46,37 @@
         ⚠️ 정답 정보가 없습니다
       </div>
 
-      <button
-        class="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        @click="nextQuestion"
-      >
+      <button class="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="nextQuestion">
         다음 문제
       </button>
     </div>
 
-    <div v-else class="text-gray-400">문제를 보러오는 중입니다...</div>
+    <div v-else class="text-gray-400"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
 import { useLoadingStore } from '@/stores/loading'
-import { useCertificationStore } from '@/stores/certification'
 import { useExamMetaStore } from '@/stores/examMeta'
-import CategorySelector from '@/components/CategorySelector.vue'
 import { useUserStore } from '@/stores/user'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const question = ref(null)
 const selectedChoice = ref(null)
 const showAnswer = ref(false)
 const showCategory = ref(false)
+const currentIndex = ref(1)
 
-const certStore = useCertificationStore()
-const examMetaStore = useExamMetaStore()
-
-const yearOptions = ref([])
-const subjectOptions = ref([])
-const sessionOptions = ref([])
-
-const category = reactive({
+const selectedCategory = ref({
+  exam: '',
   year: '',
-  subject: '',
+  round: '',
   session: '',
+  subject: '',
   mode: 'RAN'
 })
-
-const currentIndex = ref(1)
 
 const toggleCategory = () => {
   showCategory.value = !showCategory.value
@@ -95,18 +84,30 @@ const toggleCategory = () => {
 
 const fetchQuestion = async () => {
   const store = useLoadingStore()
+  const c = selectedCategory.value
+
+  if (!c.exam || !c.year || !c.round || !c.session || !c.subject) {
+    console.warn('카테고리가 완전하지 않아 문제 조회를 건너뜁니다.')
+    return
+  }
+
+  const params = {
+    exam_code: c.exam,
+    year: c.year,
+    round: c.round,
+    subject: c.subject,
+    session: c.session,
+    mode: c.mode
+  }
+
+  if (c.mode === 'SEQ') {
+    const metaStore = useExamMetaStore()
+    const startNo = metaStore.getStartNo(c.exam, c.year, c.round, c.session, c.subject)
+    params.question_no = startNo + (currentIndex.value - 1)
+  }
+
   store.start()
   try {
-    const params = {
-      exam_code: certStore.selectedCert.exam_code,
-      year: category.year,
-      subject: category.subject,
-      session: category.session,
-      mode: category.mode
-    }
-    if (category.mode === 'SEQ') {
-      params.question_no = currentIndex.value
-    }
     const res = await api.get('learn/random-question', { params })
     question.value = res.data
     selectedChoice.value = null
@@ -144,55 +145,28 @@ const getAnswerText = () => {
 }
 
 const nextQuestion = () => {
-  if (category.mode === 'SEQ') {
+  if (selectedCategory.value.mode === 'SEQ') {
     currentIndex.value += 1
   }
   fetchQuestion()
 }
 
-const handleConfirm = (newCategory) => {
-
-  Object.assign(category, newCategory)
+const handleConfirm = () => {
   currentIndex.value = 1
   showCategory.value = false
-
-  
   fetchQuestion()
 }
 
-const initCategoryAndQuestion = async () => {
-  if (!certStore.selectedCert?.exam_code) return
-
-  const meta = await examMetaStore.fetchMetadata(certStore.selectedCert.exam_code)
-  certStore.setExamMeta(meta)
-
-  yearOptions.value = meta.years || []
-  subjectOptions.value = (meta.subjects || []).map(s => ({
-    label: s.subject_name,
-    value: s.subject_code,
-    session: s.session
-  }))
-  sessionOptions.value = meta.sessions || []
-
-  const defaultSession = sessionOptions.value[0] || ''
-  const defaultSubject = subjectOptions.value.find(s => s.session === defaultSession)?.value || ''
-  const defaultYear = yearOptions.value[0] || ''
-
-  category.year = defaultYear
-  category.session = defaultSession
-  category.subject = defaultSubject
-  category.mode = 'RAN'
-
-  await nextTick()
-  fetchQuestion()
-}
-
-onMounted(initCategoryAndQuestion)
+onMounted(async () => {
+  const examMetaStore = useExamMetaStore()
+  await examMetaStore.fetchMeta()
+  showCategory.value = true
+})
 </script>
 
 <style scoped>
 .learn-page {
-  max-width: 720px;
+  max-width: 100%;
   margin: auto;
 }
 .fade-enter-active,

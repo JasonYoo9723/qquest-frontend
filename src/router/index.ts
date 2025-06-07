@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
+import HomePage from '@/views/HomePage.vue'
 import LearnPage from '@/views/LearnPage.vue'
 import SolvePage from '@/views/SolvePage.vue'
 import WrongNotePage from '@/views/WrongNotePage.vue'
@@ -7,12 +8,14 @@ import UploadPage from '@/views/UploadPage.vue'
 import ModifyPage from '@/views/ModifyPage.vue'
 import AnswerUploader from '@/views/AnswerUploader.vue'
 
+
 import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
   { path: '/learn', component: LearnPage },
   { path: '/solve', component: SolvePage },
-  {
+  { path: '/home', component: HomePage }, 
+    {
     path: '/wrong',
     component: WrongNotePage,
     meta: { requiresAuth: true }  // ✅ 로그인 필요
@@ -38,7 +41,7 @@ const routes: RouteRecordRaw[] = [
     component: ModifyPage,
     meta: { requiresAdmin: true }
   },
-  { path: '/', redirect: '/learn' }
+  { path: '/', redirect: '/home' }
 ]
 
 const router = createRouter({

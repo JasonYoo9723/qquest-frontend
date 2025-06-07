@@ -1,65 +1,91 @@
-// src/stores/examMeta.ts
 import { defineStore } from 'pinia'
 import api from '@/lib/api'
 
-export const useExamMetaStore = defineStore('examMeta', {
+interface Subject {
+  subject_code: string
+  subject_name: string
+  start_no?: number
+}
+
+interface ExamMetaMap {
+  [exam_code: string]: {
+    exam_name: string
+    meta: {
+      [year: string]: {
+        [round: string]: {
+          [session: string]: {
+            [subject_code: string]: {
+              subject_name: string
+              start_no: number
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+export const useExamMetaStore = defineStore('examMetaStore', {
   state: () => ({
-    years: [] as number[],
-    subjects: [] as {
-      subject_code: string
-      subject_name: string
-      session?: string | number
-    }[],
-    sessions: [] as string[], // ✅ 교시 목록
-    lastExamCode: '',
-    lastSession: null as number | null,
+    examMetaMap: {} as ExamMetaMap
   }),
 
   actions: {
-    async fetchMetadata(exam_code: string, session?: number, force: boolean = false) {
-      // ✅ 캐시된 조합이라면 그대로 반환
-      if (
-        !force &&
-        exam_code === this.lastExamCode &&
-        (session ?? null) === this.lastSession
-      ) {
-        return {
-          years: this.years,
-          subjects: this.subjects,
-          sessions: this.sessions,
-        }
-      }
-
+    async fetchMeta() {
       try {
-        const params: Record<string, any> = { exam_code }
-        if (session !== undefined) {
-          params.session = session
-        }
-
-        const res = await api.get('/exam-metadata', { params })
-
-        this.years = res.data.years || []
-        this.subjects = res.data.subjects || []
-        this.sessions = Array.isArray(res.data.sessions)
-          ? res.data.sessions.map(s => String(s))
-          : []
-
-        this.lastExamCode = exam_code
-        this.lastSession = session ?? null
-
-        return {
-          years: this.years,
-          subjects: this.subjects,
-          sessions: this.sessions,
-        }
+        const res = await api.get('/exam-meta-map')
+        this.examMetaMap = res.data.exam_meta_map || {}
       } catch (err) {
-        console.error('❌ exam 메타데이터 불러오기 실패:', err)
-        return {
-          years: [],
-          subjects: [],
-          sessions: []
-        }
+        console.error('❌ 메타 정보 로딩 실패:', err)
       }
     },
-  },
+
+    getExamCodes() {
+      return Object.entries(this.examMetaMap).map(([code, info]) => ({
+        label: info.exam_name,
+        value: code
+      }))
+    },
+
+    getYears(exam_code: string): string[] {
+      const meta = this.examMetaMap[exam_code]?.meta
+      return meta ? Object.keys(meta).sort((a, b) => Number(b) - Number(a)) : []
+    },
+
+    getRounds(exam_code: string, year: string): string[] {
+      const yearMeta = this.examMetaMap[exam_code]?.meta?.[year]
+      return yearMeta ? Object.keys(yearMeta) : []
+    },
+
+    getSessions(exam_code: string, year: string, round: string): string[] {
+      const roundMeta = this.examMetaMap[exam_code]?.meta?.[year]?.[round]
+      return roundMeta ? Object.keys(roundMeta) : []
+    },
+
+    getSubjects(exam_code: string, year: string, round: string, session: string): Subject[] {
+      const sessionMeta = this.examMetaMap[exam_code]?.meta?.[year]?.[round]?.[session]
+      if (!sessionMeta) return []
+
+      return Object.entries(sessionMeta).map(([subject_code, data]) => ({
+        subject_code: data.subject_code,
+        subject_name: data.subject_name,
+        start_no: data.start_no
+      }))
+    },
+
+    getStartNo(
+      exam_code: string,
+      year: string,
+      round: string,
+      session: string,
+      subject_code: string
+    ): number {
+      const subjects =
+        this.examMetaMap?.[exam_code]?.meta?.[year]?.[round]?.[session] || []
+
+      const subject = subjects.find(s => s.subject_code === subject_code)
+
+      return subject?.start_no || 1
+    }
+  }
 })
