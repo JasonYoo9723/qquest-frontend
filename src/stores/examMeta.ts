@@ -85,6 +85,39 @@ export const useExamMetaStore = defineStore('examMetaStore', {
 
       const subject = subjects[subject_code]
       return subject?.start_no || 1
+    },
+
+    // ✅ 추가된 함수: 전체 과목 반환
+    getAllSubjects(exam_code: string): Subject[] {
+      const result: Subject[] = []
+      const seen = new Set<string>()
+
+      const exam = this.examMetaMap[exam_code]
+      if (!exam) return []
+
+      const meta = exam.meta
+      for (const year of Object.keys(meta)) {
+        const yearMeta = meta[year]
+        for (const round of Object.keys(yearMeta)) {
+          const roundMeta = yearMeta[round]
+          for (const session of Object.keys(roundMeta)) {
+            const sessionMeta = roundMeta[session]
+            for (const subject_code of Object.keys(sessionMeta)) {
+              if (!seen.has(subject_code)) {
+                seen.add(subject_code)
+                const data = sessionMeta[subject_code]
+                result.push({
+                  subject_code,
+                  subject_name: data.subject_name,
+                  start_no: data.start_no
+                })
+              }
+            }
+          }
+        }
+      }
+
+      return result
     }
   }
 })

@@ -1,7 +1,9 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import HomePage from '@/views/HomePage.vue'
 import LearnPage from '@/views/LearnPage.vue'
-import SolvePage from '@/views/SolvePage.vue'
+import ExamPage from '@/views/ExamPage.vue'
+import ExamHistoryPage from '@/views/ExamHistoryPage.vue'
+import ExamResultPage from '@/views/ExamResultPage.vue'
 import WrongNotePage from '@/views/WrongNotePage.vue'
 import DashboardPage from '@/views/DashboardPage.vue'
 import UploadPage from '@/views/UploadPage.vue'
@@ -12,13 +14,26 @@ import AnswerUploader from '@/views/AnswerUploader.vue'
 import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/learn', component: LearnPage },
-  { path: '/solve', component: SolvePage },
   { path: '/home', component: HomePage }, 
-    {
+  { path: '/learn', component: LearnPage },
+  { path: '/exam',
+    component: ExamPage, 
+    meta: { requiresAuth: true } 
+  },
+  { path: '/exam/history',
+    component: ExamHistoryPage,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/exam/result/:id',
+    name: 'ExamResult',
+    component: ExamResultPage,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/wrong',
     component: WrongNotePage,
-    meta: { requiresAuth: true }  // ✅ 로그인 필요
+    meta: { requiresAuth: true }
   },
   {
     path: '/dashboard',

@@ -1,4 +1,3 @@
-<!-- src\views\LearnPage.vue -->
 <template>
   <div class="learn-page w-full max-w-screen-md mx-auto px-1 sm:px-6 py-4 relative">
     <div class="flex items-center justify-between mb-2">
@@ -15,7 +14,12 @@
       />
     </transition>
 
-    <div v-if="question" class="question-card bg-white text-black p-1 rounded-xl shadow-md">
+    <div v-if="totalCount > 0" class="mb-4 text-right text-sm font-semibold"
+         :class="answerRate < 60 ? 'text-red-600' : 'text-green-600'">
+      정답 {{ correctCount }}/{{ totalCount }} ({{ answerRate }}%)
+    </div>
+
+    <div v-if="question" class="w-full bg-white text-black p-3 rounded-xl shadow">
       <p class="text-sm text-gray-600 mb-1">
         {{ question.exam_name }} | {{ question.year }}년도 {{ question.round }}회 <br />
         {{ question.subject_name }}
@@ -46,28 +50,49 @@
         ⚠️ 정답 정보가 없습니다
       </div>
 
-      <button class="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="nextQuestion">
+      <button
+        class="mt-6 w-full text-lg font-semibold bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700"
+        @click="nextQuestion"
+      >
         다음 문제
       </button>
     </div>
 
     <div v-else class="text-gray-400"></div>
+
+    <BaseModal
+      v-if="showAnswerRequiredModal"
+      title="알림"
+      message="정답을 선택해주세요."
+      @close="showAnswerRequiredModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import Cookies from 'js-cookie'
 import api from '@/lib/api'
 import { useLoadingStore } from '@/stores/loading'
 import { useExamMetaStore } from '@/stores/examMeta'
 import { useUserStore } from '@/stores/user'
 import CategorySelector from '@/components/CategorySelector.vue'
+import BaseModal from '@/components/BaseModal.vue'
 
 const question = ref(null)
 const selectedChoice = ref(null)
 const showAnswer = ref(false)
 const showCategory = ref(false)
+const showAnswerRequiredModal = ref(false)
 const currentIndex = ref(1)
+
+const correctCount = ref(0)
+const totalCount = ref(0)
+
+const answerRate = computed(() => {
+  if (totalCount.value === 0) return 0
+  return Math.round((correctCount.value / totalCount.value) * 100)
+})
 
 const selectedCategory = ref({
   exam: '',
@@ -86,25 +111,29 @@ const fetchQuestion = async () => {
   const store = useLoadingStore()
   const c = selectedCategory.value
 
-  console.log("c", c)
-
-  if (!c.exam || !c.year || !c.round || !c.session || !c.subject) {
-    console.warn('카테고리가 완전하지 않아 문제 조회를 건너뜁니다.')
+  if (!c.exam) {
+    console.warn('자격증이 선택되지 않았습니다. 문제 조회를 건너뜁니다.')
     return
   }
 
   const params = {
     exam_code: c.exam,
-    year: c.year,
-    round: c.round,
-    subject: c.subject,
-    session: c.session,
+    year: c.year || null,
+    round: c.round || null,
+    subject: c.subject || null,
+    session: c.session || null,
     mode: c.mode
   }
 
   if (c.mode === 'SEQ') {
     const metaStore = useExamMetaStore()
-    const startNo = metaStore.getStartNo(c.exam, c.year, c.round, c.session, c.subject)
+    const startNo = metaStore.getStartNo(
+      c.exam,
+      c.year || '',
+      c.round || '',
+      c.session || '',
+      c.subject || ''
+    )
     params.question_no = startNo + (currentIndex.value - 1)
   }
 
@@ -126,7 +155,13 @@ const handleChoice = async (number) => {
   if (!showAnswer.value) {
     selectedChoice.value = number
     showAnswer.value = true
+
     const correct = parseInt(question.value.answer)
+    totalCount.value += 1
+    if (number === correct) {
+      correctCount.value += 1
+    }
+
     if (number !== correct) {
       const userStore = useUserStore()
       if (userStore.isLoggedIn) {
@@ -147,23 +182,48 @@ const getAnswerText = () => {
 }
 
 const nextQuestion = () => {
+  if (!showAnswer.value) {
+    showAnswerRequiredModal.value = true
+    return
+  }
+
   if (selectedCategory.value.mode === 'SEQ') {
     currentIndex.value += 1
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   fetchQuestion()
 }
 
-const handleConfirm = () => {
+const handleConfirm = (confirmedCategory) => {
+  const store = useLoadingStore()
+  store.start()
+  selectedCategory.value = { ...confirmedCategory }
   currentIndex.value = 1
+  correctCount.value = 0
+  totalCount.value = 0
   showCategory.value = false
-  fetchQuestion()
+  fetchQuestion().finally(() => {
+    store.stop()
+  })
 }
 
 onMounted(async () => {
+  const store = useLoadingStore()
+  store.start()
   const examMetaStore = useExamMetaStore()
   await examMetaStore.fetchMeta()
+  store.stop()
+  
+  selectedCategory.value = {
+    exam: Cookies.get('last_exam') || '',
+    year: Cookies.get('last_year') || '',
+    round: Cookies.get('last_round') || '',
+    session: Cookies.get('last_session') || '',
+    subject: Cookies.get('last_subject') || '',
+    mode: Cookies.get('last_mode') || 'RAN'
+  }
+
   showCategory.value = true
 })
 </script>
