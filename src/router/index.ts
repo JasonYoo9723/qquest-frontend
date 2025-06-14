@@ -56,7 +56,13 @@ const routes: RouteRecordRaw[] = [
     component: ModifyPage,
     meta: { requiresAdmin: true }
   },
-  { path: '/', redirect: '/home' }
+  { path: '/', redirect: '/home' },
+  {
+    path: '/visit-stats',
+    name: 'VisitStatsPage',
+    component: () => import('@/views/VisitStatsPage.vue'),
+    meta: { requiresAdmin: true }
+  }
 ]
 
 const router = createRouter({

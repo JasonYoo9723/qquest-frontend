@@ -78,6 +78,7 @@ import { useExamMetaStore } from '@/stores/examMeta'
 import { useUserStore } from '@/stores/user'
 import CategorySelector from '@/components/CategorySelector.vue'
 import BaseModal from '@/components/BaseModal.vue'
+import { useRoute } from 'vue-router';
 
 const question = ref(null)
 const selectedChoice = ref(null)
@@ -88,6 +89,7 @@ const currentIndex = ref(1)
 
 const correctCount = ref(0)
 const totalCount = ref(0)
+const route = useRoute();
 
 const answerRate = computed(() => {
   if (totalCount.value === 0) return 0
@@ -223,8 +225,11 @@ onMounted(async () => {
     subject: Cookies.get('last_subject') || '',
     mode: Cookies.get('last_mode') || 'RAN'
   }
-
+  
   showCategory.value = true
+  api.post('/visit', { exam_code: selectedCategory.value.exam || '', path: route.fullPath }).catch(err => {
+    console.warn('방문 로그 실패:', err)
+  })
 })
 </script>
 

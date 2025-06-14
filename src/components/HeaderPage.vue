@@ -17,6 +17,7 @@
           <RouterLink v-if="user?.is_admin" to="/dashboard" class="hover:underline">대시보드</RouterLink>
           <RouterLink v-if="user?.is_admin" to="/upload" class="hover:underline">문제등록</RouterLink>
           <RouterLink v-if="user?.is_admin" to="/modify" class="hover:underline">문제수정</RouterLink>
+          <RouterLink v-if="user?.is_admin" to="/visit-stats" class="hover:underline">방문통계</RouterLink>
         </nav>
       </div>
 
@@ -40,6 +41,7 @@
         <RouterLink v-if="user?.is_admin" to="/dashboard" @click="closeMenu" class="hover:underline">대시보드</RouterLink>
         <RouterLink v-if="user?.is_admin" to="/upload" @click="closeMenu" class="hover:underline">문제등록</RouterLink>
         <RouterLink v-if="user?.is_admin" to="/modify" @click="closeMenu" class="hover:underline">문제수정</RouterLink>
+        <RouterLink v-if="user?.is_admin" to="/visit-stats" @click="closeMenu" class="hover:underline">방문통계</RouterLink>
 
         <div class="flex gap-3 mt-2 items-center">
           <span v-if="user" class="text-xs text-gray-600">{{ user.name }} 님</span>

@@ -89,6 +89,10 @@ const nextQuestion = () => {
 
 onMounted(() => {
   fetchNextWrong()
+  
+  api.post('/visit', { exam_code: '', path: window.location.pathname}).catch(err => {
+    console.warn('방문 로그 실패:', err)
+  })
 })
 </script>
 

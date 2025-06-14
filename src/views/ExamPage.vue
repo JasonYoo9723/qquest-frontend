@@ -153,6 +153,10 @@ const startExam = async () => {
     started.value = true
     currentIndex.value = 0
     examStartTime = new Date()
+    
+    api.post('/visit', { exam_code: category.value.exam || '', path: router.path}).catch(err => {
+      console.warn('방문 로그 실패:', err)
+    })
   } catch (err) {
     alert('문제 로드 실패')
     console.error(err)
