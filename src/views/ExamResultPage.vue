@@ -47,7 +47,12 @@
 
     <!-- 시험일시 -->
     <div class="text-white text-sm text-right mb-3">
-      시험일시: {{ new Date(result.taken_at + 'Z').toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) }}
+      시험일시:
+      {{
+        new Date(result.taken_at + "Z").toLocaleString("ko-KR", {
+          timeZone: "Asia/Seoul",
+        })
+      }}
     </div>
 
     <!-- 🔵 시험 목록으로 이동 버튼 -->
@@ -70,7 +75,8 @@
         class="mb-4 p-4 bg-white text-black border rounded-2xl shadow"
       >
         <p class="text-sm text-gray-600 mb-1">
-          {{ result.exam_name || result.exam_code }} | {{ result.year }}년도 {{ result.round }}회<br />
+          {{ result.exam_name || result.exam_code }} | {{ result.year }}년도
+          {{ result.round }}회<br />
           {{ result.subject_name || result.subject }}
         </p>
 
@@ -84,9 +90,12 @@
             :key="i"
             class="px-2 py-1 rounded"
             :class="{
-              'bg-red-100 border border-red-400': i + 1 === q.chosen_choice && i + 1 !== q.correct_choice,
-              'bg-green-100 border border-green-400': i + 1 === q.correct_choice,
-              'text-gray-700': i + 1 !== q.chosen_choice && i + 1 !== q.correct_choice
+              'bg-red-100 border border-red-400':
+                i + 1 === q.chosen_choice && i + 1 !== q.correct_choice,
+              'bg-green-100 border border-green-400':
+                i + 1 === q.correct_choice,
+              'text-gray-700':
+                i + 1 !== q.chosen_choice && i + 1 !== q.correct_choice,
             }"
           >
             {{ i + 1 }}. {{ choice }}
@@ -104,45 +113,52 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useLoadingStore } from '@/stores/loading'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
+import { useLoadingStore } from "@/stores/loading";
 
-const result = ref(null)
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
-const store = useLoadingStore()
+const result = ref(null);
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
+const store = useLoadingStore();
 
 onMounted(async () => {
   try {
-    store.start()
-    const id = route.params.id
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exam/result/${id}`, {
-      headers: {
-        Authorization: `Bearer ${userStore.token}`
+    store.start();
+    const id = route.params.id;
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/exam/result/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${userStore.token}`,
+        },
       }
-    })
-    if (!res.ok) throw new Error('결과 불러오기 실패')
-    result.value = await res.json()
+    );
+    if (!res.ok) throw new Error("결과 불러오기 실패");
+    result.value = await res.json();
   } catch (err) {
-    console.error(err)
+    console.error(err);
   } finally {
-    store.stop()
-    api.post('/visit', { exam_code: '', path: window.location.pathname}).catch(err => {
-      console.warn('방문 로그 실패:', err)
-    })
+    store.stop();
+    api
+      .post("/admin/visit", { exam_code: "", path: window.location.pathname })
+      .catch((err) => {
+        console.warn("방문 로그 실패:", err);
+      });
   }
-})
+});
 
 function goToHistory() {
-  router.push('/exam/history')
+  router.push("/exam/history");
 }
 
 function formatTime(seconds) {
-  const min = Math.floor(seconds / 60)
-  const sec = seconds % 60
-  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(
+    min % 60
+  ).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 </script>

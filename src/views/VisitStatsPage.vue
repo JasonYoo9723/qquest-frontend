@@ -15,32 +15,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import api from '@/lib/api'; // axios 인스턴스
-import LineChart from '@/components/LineChart.vue';
+import { ref, onMounted } from "vue";
+import api from "@/lib/api"; // axios 인스턴스
+import LineChart from "@/components/LineChart.vue";
 
 const dailyChartData = ref(null);
 const monthlyChartData = ref(null);
 
 onMounted(async () => {
-  const { data: daily } = await api.get('/visit/stats/daily');
-  const { data: monthly } = await api.get('/visit/stats/monthly');
+  const { data: daily } = await api.get("/admin/visit/stats/daily");
+  const { data: monthly } = await api.get("/admin/visit/stats/monthly");
 
   dailyChartData.value = {
     labels: daily.map((d) => convertToKST(d.date)),
     datasets: [
       {
-        label: '페이지뷰',
+        label: "페이지뷰",
         data: daily.map((d) => d.pv),
-        borderColor: 'blue',
-        backgroundColor: 'rgba(0,0,255,0.1)',
+        borderColor: "blue",
+        backgroundColor: "rgba(0,0,255,0.1)",
         tension: 0.3,
       },
       {
-        label: '유니크 방문자',
+        label: "유니크 방문자",
         data: daily.map((d) => d.uv),
-        borderColor: 'green',
-        backgroundColor: 'rgba(0,255,0,0.1)',
+        borderColor: "green",
+        backgroundColor: "rgba(0,255,0,0.1)",
         tension: 0.3,
       },
     ],
@@ -50,17 +50,17 @@ onMounted(async () => {
     labels: monthly.map((m) => m.month),
     datasets: [
       {
-        label: '페이지뷰',
+        label: "페이지뷰",
         data: monthly.map((m) => m.pv),
-        borderColor: 'blue',
-        backgroundColor: 'rgba(0,0,255,0.1)',
+        borderColor: "blue",
+        backgroundColor: "rgba(0,0,255,0.1)",
         tension: 0.3,
       },
       {
-        label: '유니크 방문자',
+        label: "유니크 방문자",
         data: monthly.map((m) => m.uv),
-        borderColor: 'green',
-        backgroundColor: 'rgba(0,255,0,0.1)',
+        borderColor: "green",
+        backgroundColor: "rgba(0,255,0,0.1)",
         tension: 0.3,
       },
     ],
@@ -68,12 +68,12 @@ onMounted(async () => {
 });
 
 function convertToKST(dateStr) {
-  const utcDate = new Date(dateStr + 'T00:00:00Z');
-  return utcDate.toLocaleDateString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+  const utcDate = new Date(dateStr + "T00:00:00Z");
+  return utcDate.toLocaleDateString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
 </script>
